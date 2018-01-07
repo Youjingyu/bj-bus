@@ -25,7 +25,6 @@ module.exports = {
         });
         const parser = new htmlparser.Parser(handler);
         parser.parseComplete(htmlString);
-        console.log(html + 1);
         return html.replace(/&nbsp;/g, '  ');
     }
 }

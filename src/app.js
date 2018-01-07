@@ -1,4 +1,4 @@
-const {TextInput, Button, TextView, Picker,  Composite, ui} = require('tabris');
+const {TextInput, Button, TextView, Picker,  Composite, ui, app} = require('tabris');
 const ajax = require('./utils/ajax');
 const parse = require('./utils/parse');
 
@@ -20,6 +20,19 @@ let searchStationInfo = new Button({
 let direPicker, direArr;
 let stationPicker, stationArr;
 let textView;
+
+let isLunch = true;
+app.on('foreground', ()=>{
+  if(isLunch){
+    const selBLine = localStorage.getItem('selBLine'),
+        selBDir = localStorage.getItem('selBDir'),
+        selBStop = localStorage.getItem('selBStop');
+    if(selBLine && selBDir && selBStop){
+      getBusInfo(selBLine, selBDir, selBStop);
+    }    
+  }
+  isLunch = false;  
+});
 
 searchStationInfo.on('select', () => {
   direPicker && direPicker.dispose();
@@ -52,25 +65,34 @@ searchStationInfo.on('select', () => {
             selectionIndex: 0
           }).appendTo(ui.contentView);
           stationPicker.on('select', ({index}) => {
-            ajax.get({
-              act: 'busTime',
-              selBLine: input.text,
-              selBDir: direArr[direPicker.selectionIndex].value,
-              selBStop: stationArr[index].value
-            }, 'json').then(res => {
-              textView = new TextView({
-                top: 'prev() 20',
-                left: 0,
-                right: 0,
-                maxLines: 100,
-                markupEnabled: true,
-                text: parse.domText(res.html)
-              }).appendTo(ui.contentView);
-              // console.log(res);
-            })
+            const selBLine = input.text,
+            selBDir = direArr[direPicker.selectionIndex].value,
+            selBStop = stationArr[index].value;
+            localStorage.setItem('selBLine', selBLine);
+            localStorage.setItem('selBDir', selBDir);
+            localStorage.setItem('selBStop', selBStop);
+            getBusInfo(selBLine, selBDir, selBStop);
           });
         });
       }
     });
   })
 });
+
+function getBusInfo(selBLine, selBDir, selBStop){
+  ajax.get({
+    act: 'busTime',
+    selBLine,
+    selBDir,
+    selBStop
+  }, 'json').then(res => {
+    textView = new TextView({
+      top: 'prev() 20',
+      left: 0,
+      right: 0,
+      maxLines: 100,
+      markupEnabled: true,
+      text: parse.domText(res.html)
+    }).appendTo(ui.contentView);
+  })
+}
